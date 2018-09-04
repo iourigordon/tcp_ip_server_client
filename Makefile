@@ -1,0 +1,46 @@
+#/bin/bash
+
+TARGET_SRV = tcp_ip_server
+TARGET_CLT = tcp_ip_client
+
+SERVER_DIR = server
+CLIENT_DIR = client
+
+SERVER_SRC = $(wildcard $(SERVER_DIR)/*.cc)
+CLIENT_SRC = $(wildcard $(CLIENT_DIR)/*.cc)
+
+OBJ_DIR = obj
+SERVER_OBJ_FILES = $(patsubst %.cc, $(OBJ_DIR)/%.o, $(notdir $(SERVER_SRC)))
+CLIENT_OBJ_FILES = $(patsubst %.cc, $(OBJ_DIR)/%.o, $(notdir $(CLIENT_SRC)))
+
+all: test $(TARGET_SRV) $(TARGET_CLT)
+
+test:
+	@echo $(SERVER_SRC)
+	@echo $(SERVER_OBJ_FILES)
+
+$(TARGET_SRV): $(OBJ_DIR) $(SERVER_OBJ_FILES)
+	@echo "Linking " $(SERVER_OBJ_FILES)
+	@$(CXX) $(CXXFLAGS) $(SERVER_OBJ_FILES) -o $@
+
+$(TARGET_CLT): $(OBJ_DIR) $(CLIENT_OBJ_FILES)
+	@echo "Linking " $(CLIENT_OBJ_FILES)
+	@$(CXX) $(CXXFLAGS) $(CLIENT_OBJ_FILES) -o $@
+
+$(OBJ_DIR)/%.o: $(SERVER_DIR)/%.cc
+	@echo "Compiling " $@ " from : " $^
+	@$(CXX) $(CXXFLAGS) -c $^ -o $@
+
+$(OBJ_DIR)/%.o: $(CLIENT_DIR)/%.cc
+	@echo "Compiling " $@ " from : " $^
+	@$(CXX) $(CXXFLAGS) -c $^ -o $@
+
+$(OBJ_DIR):
+	@mkdir -p $(OBJ_DIR)
+
+.PHONY: clean
+
+clean:
+	@rm -rf obj
+	@rm -f $(TARGET_SRV)
+	@rm -f $(TARGET_CLT)
