@@ -24,9 +24,11 @@ void signal_hdlr(int signum)
 int main(int argc, char* argv[])
 {
     char* buff[1024];
+
+    int ret;
     int server_sock, client_sock;
 
-    fd_set client_fds;
+    fd_set server_fds, client_fds;
     socklen_t client_addr_size;
     struct sockaddr_in server_addr, client_addr;
 
@@ -68,25 +70,34 @@ int main(int argc, char* argv[])
     }
     
     FD_ZERO(&client_fds);
-    while (!exit_mainloop) {
-        client_addr_size = sizeof(sockaddr_in);
-        if ((client_sock = accept(server_sock,(struct sockaddr*)&client_addr,&client_addr_size)) != -1) {
-            cout << "Incoming connection from " << inet_ntoa(client_addr.sin_addr) << endl;
-        } else {
-            cout << "ERROR: accepting client connection " << strerror(errno) << endl;
-        }
+    for (;;) {
+        FD_ZERO(&server_fds);
+        FD_SET(server_sock,&server_fds);
 
-        FD_SET(client_sock,&client_fds);
-        if (select(client_sock+1,&client_fds,NULL,NULL,NULL) != -1) {
-            if (FD_ISSET(client_sock,&client_fds)) {
-                if (read(client_sock,buff,1024) != -1) {
-                    cout << "Received " << (char*)buff << endl;
-                }                
+        if ((ret = select(server_sock,&server_fds,NULL,NULL,NULL)) != -1) {
+            client_addr_size = sizeof(sockaddr_in);
+            if ((client_sock = accept(server_sock,(struct sockaddr*)&client_addr,&client_addr_size)) != -1) {
+                cout << "Incoming connection from " << inet_ntoa(client_addr.sin_addr) << endl;
+            } else {
+                cout << "ERROR: accepting client connection " << strerror(errno) << endl;
+            }
+
+            FD_SET(client_sock,&client_fds);
+            if (select(client_sock+1,&client_fds,NULL,NULL,NULL) != -1) {
+                if (FD_ISSET(client_sock,&client_fds)) {
+                    if (read(client_sock,buff,1024) != -1) {
+                        cout << "Received " << (char*)buff << endl;
+                    }                
+                }
+            }
+            close(client_sock);
+        } else {
+            if ((errno = EINTR) && exit_mainloop) {
+                cout << "Server is shutting down" << endl;
+                break;
             }
         }
-        close(client_sock);
     }
-
     if (close(server_sock)) {
         cout << "ERROR: closing socket " << strerror(errno) << endl;
     }
