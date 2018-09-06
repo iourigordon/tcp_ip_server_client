@@ -13,11 +13,7 @@ OBJ_DIR = obj
 SERVER_OBJ_FILES = $(patsubst %.cc, $(OBJ_DIR)/%.o, $(notdir $(SERVER_SRC)))
 CLIENT_OBJ_FILES = $(patsubst %.cc, $(OBJ_DIR)/%.o, $(notdir $(CLIENT_SRC)))
 
-all: test $(TARGET_SRV) $(TARGET_CLT)
-
-test:
-	@echo $(SERVER_SRC)
-	@echo $(SERVER_OBJ_FILES)
+all: $(TARGET_SRV) $(TARGET_CLT)
 
 $(TARGET_SRV): $(OBJ_DIR) $(SERVER_OBJ_FILES)
 	@echo "Linking " $(SERVER_OBJ_FILES)

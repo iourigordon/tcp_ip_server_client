@@ -8,8 +8,11 @@
 #include <netinet/in.h>
 
 #include <iostream>
+#include <map>
 
 using namespace std;
+
+#include "connections.h"
 
 #define MAX_PEND_CONNS 10
 
@@ -23,8 +26,6 @@ void signal_hdlr(int signum)
 
 int main(int argc, char* argv[])
 {
-    char* buff[1024];
-
     int ret;
     int server_sock, client_sock;
 
@@ -32,7 +33,7 @@ int main(int argc, char* argv[])
     int to_chld_pipe[2];
     int to_prnt_pipe[2];
 
-    fd_set server_fds, client_fds;
+    fd_set server_fds;
     socklen_t client_addr_size;
     struct sockaddr_in server_addr, client_addr;
 
@@ -50,7 +51,6 @@ int main(int argc, char* argv[])
         return 0;
     }
 
-    memset(buff,0,1024);
     memset(&server_addr,0,sizeof(struct sockaddr_in));
 
     server_addr.sin_family = AF_INET;
@@ -73,7 +73,6 @@ int main(int argc, char* argv[])
         return 0;
     }
     
-    FD_ZERO(&client_fds);
     for (;;) {
         FD_ZERO(&server_fds);
         FD_SET(server_sock,&server_fds);
@@ -125,22 +124,13 @@ int main(int argc, char* argv[])
                         close(to_chld_pipe[1]);
                         close(to_prnt_pipe[0]);                        
 
-                        //create connections
+                        connections *client_connections = connections::get_connection(to_chld_pipe[0],to_prnt_pipe[1]);
+                        client_connections->run();
                     }
                 }
             } else {
                 cout << "ERROR: accepting client connection " << strerror(errno) << endl;
             }
-
-            FD_SET(client_sock,&client_fds);
-            if (select(client_sock+1,&client_fds,NULL,NULL,NULL) != -1) {
-                if (FD_ISSET(client_sock,&client_fds)) {
-                    if (read(client_sock,buff,1024) != -1) {
-                        cout << "Received " << (char*)buff << endl;
-                    }                
-                }
-            }
-            close(client_sock);
         } else {
             if ((errno = EINTR) && exit_mainloop) {
                 cout << "Server is shutting down" << endl;
