@@ -28,6 +28,10 @@ int main(int argc, char* argv[])
     int ret;
     int server_sock, client_sock;
 
+    int child_pid;
+    int to_chld_pipe[2];
+    int to_prnt_pipe[2];
+
     fd_set server_fds, client_fds;
     socklen_t client_addr_size;
     struct sockaddr_in server_addr, client_addr;
@@ -78,6 +82,52 @@ int main(int argc, char* argv[])
             client_addr_size = sizeof(sockaddr_in);
             if ((client_sock = accept(server_sock,(struct sockaddr*)&client_addr,&client_addr_size)) != -1) {
                 cout << "Incoming connection from " << inet_ntoa(client_addr.sin_addr) << endl;
+                if (child_pid) {
+                    //send new socket fd to child
+                } else {
+                    if (pipe(to_chld_pipe) != 0) {
+                        if (close(client_sock)) {
+                            fprintf(stderr,"ERROR: couldn't create comm pipe\n");
+                            break;
+                        }                        
+                    }
+                    if (pipe(to_prnt_pipe) != 0) {
+                        if (close(to_chld_pipe[0]))
+                                fprintf(stderr,"ERROR: failed to close fd\n");
+                        if (close(to_chld_pipe[1]))
+                                fprintf(stderr,"ERROR: failes to close fd\n");
+                        if (close(client_sock)) {
+                            fprintf(stderr,"ERROR: couldn't create comm pipe\n");
+                            break;
+                        }                        
+                    }
+                    //there is on connections proc yet, let's fork one
+                    if ((child_pid = fork()) == -1) {
+                        fprintf(stderr, "ERROR: failed to fork connections proc\n");
+                        for (int i=0;i<2;i++) {
+                            if (close(to_chld_pipe[i]))
+                                fprintf(stderr,"ERROR: failed to close fd\n");
+                            if (close(to_prnt_pipe[i]))
+                                fprintf(stderr,"ERROR: failed to close fd\n");
+                        }    
+                        if (close(client_sock)) {
+                            fprintf(stderr,"ERROR: couldn't fork connections proc\n");
+                            break;
+                        }
+                    } else if (child_pid) {
+                        close(to_chld_pipe[0]);
+                        close(to_prnt_pipe[1]);
+
+                        //add connects proc to the vector of available ones
+                        //send client socket to the forked process
+                    } else {
+                        //child process
+                        close(to_chld_pipe[1]);
+                        close(to_prnt_pipe[0]);                        
+
+                        //create connections
+                    }
+                }
             } else {
                 cout << "ERROR: accepting client connection " << strerror(errno) << endl;
             }
