@@ -77,7 +77,7 @@ int main(int argc, char* argv[])
         FD_ZERO(&server_fds);
         FD_SET(server_sock,&server_fds);
 
-        if ((ret = select(server_sock,&server_fds,NULL,NULL,NULL)) != -1) {
+        if ((ret = select(server_sock+1,&server_fds,NULL,NULL,NULL)) != -1) {
             client_addr_size = sizeof(sockaddr_in);
             if ((client_sock = accept(server_sock,(struct sockaddr*)&client_addr,&client_addr_size)) != -1) {
                 cout << "Incoming connection from " << inet_ntoa(client_addr.sin_addr) << endl;
@@ -119,6 +119,7 @@ int main(int argc, char* argv[])
 
                         //add connects proc to the vector of available ones
                         //send client socket to the forked process
+                        write(to_chld_pipe[1],"hello",6);
                     } else {
                         //child process
                         close(to_chld_pipe[1]);
