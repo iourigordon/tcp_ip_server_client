@@ -65,15 +65,20 @@ int main(int argc, char* argv[])
     msg->set_socket_id(1234);
     string ip_addr = "10.10.10.10";
     msg->set_client_ip_addr(ip_addr);
-    
-    return 0;
-#if 0
-    ostringstream& str_stream = msg.serialize();
+    ostringstream& str_stream = msg->serialize();
     cout << printable(str_stream.str()) << endl;
-
-    ctrl_message_add_client deser_msg;
+   
 
     istringstream ser_stream(str_stream.str());
+    ctrl_message* deser_msg = ctrl_msg_fact::deserialize_stream(ser_stream);
+
+    ctrl_message_add_client* client_msg = dynamic_cast<ctrl_message_add_client*>(deser_msg);
+    cout << "SockID = " << client_msg->get_socket_id() << "; IP addr = " << client_msg->get_client_ip_addr() << endl;
+
+    return 0;
+#if 0
+
+
     cout << printable(str_stream.str()) << endl;
     deser_msg.deserialize(ser_stream);
 

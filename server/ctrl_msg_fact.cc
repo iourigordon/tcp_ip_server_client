@@ -24,3 +24,25 @@ create_msg(ctrl_message_id Id)
     return NULL;
 }
 
+ctrl_message*
+ctrl_msg_fact::
+deserialize_stream(istringstream& InStream)
+{
+    ctrl_message* ctrl_msg = new ctrl_message();
+
+    ctrl_msg->deserialize(InStream);
+    switch (ctrl_msg->get_msg_id()) {
+        case CTRL_MSG_ADD_CLIENT: {
+            ctrl_message_add_client* msg = new ctrl_message_add_client();
+            msg->deserialize(InStream);
+            delete ctrl_msg;
+            ctrl_msg = dynamic_cast<ctrl_message*>(msg);
+            break;
+        }
+        case CTRL_MSG_ACK:
+            break;
+        case CTRL_MSG_NACK:
+            break;
+    }
+    return ctrl_msg;
+}

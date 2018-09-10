@@ -109,7 +109,6 @@ void
 ctrl_message_add_client::
 deserialize(istringstream& SerStream)
 {
-    m_MsgId = deserialize_type<int>(SerStream);
     m_SockId = deserialize_type<int>(SerStream);
     deserialize_type<string>(SerStream,m_ClientIpAddr);
     cout << "Deserialized m_MsgId " << m_MsgId << endl; 

@@ -13,7 +13,8 @@ class ctrl_msg_fact
 {
     public:
 
-        static ctrl_message* create_msg(ctrl_message_id Id);
+        static ctrl_message*  create_msg(ctrl_message_id Id);
+        static ctrl_message*  deserialize_stream(istringstream& InStream);
 };
 
 #endif
