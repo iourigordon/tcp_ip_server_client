@@ -6,6 +6,7 @@ TARGET_CLT = tcp_ip_client
 SERVER_DIR = server
 CLIENT_DIR = client
 
+SERVER_HDR = $(wildcard $(SERVER_DIR)/*.h)
 SERVER_SRC = $(wildcard $(SERVER_DIR)/*.cc)
 CLIENT_SRC = $(wildcard $(CLIENT_DIR)/*.cc)
 
@@ -23,7 +24,7 @@ $(TARGET_CLT): $(OBJ_DIR) $(CLIENT_OBJ_FILES)
 	@echo "Linking " $(CLIENT_OBJ_FILES)
 	@$(CXX) $(CXXFLAGS) $(CLIENT_OBJ_FILES) -o $@
 
-$(OBJ_DIR)/%.o: $(SERVER_DIR)/%.cc
+$(OBJ_DIR)/%.o: $(SERVER_DIR)/%.cc 
 	@echo "Compiling " $@ " from : " $^
 	@$(CXX) $(CXXFLAGS) -c $^ -o $@
 

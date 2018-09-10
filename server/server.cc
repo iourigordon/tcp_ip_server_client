@@ -7,12 +7,17 @@
 #include <sys/select.h>
 #include <netinet/in.h>
 
-#include <iostream>
+
 #include <map>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
 
 using namespace std;
 
 #include "connections.h"
+#include "ctrl_msg_fact.h"
+#include "ctrl_message.h"
 
 #define MAX_PEND_CONNS 10
 
@@ -22,6 +27,25 @@ void signal_hdlr(int signum)
 {
     cout << "Received " << signum << " signal" << endl;
     exit_mainloop = true;
+}
+
+std::string printable(char c)
+{
+    std::ostringstream oss;
+    if (isprint(c))
+        oss << c;
+    else
+        oss << "\\x" << std::hex << std::setw(2) << std::setfill('0')
+            << (int)(uint8_t)c << std::dec;
+    return oss.str();
+}
+
+std::string printable(const std::string& s)
+{
+    std::string result;
+    for (std::string::const_iterator i = s.begin(); i != s.end(); ++i)
+        result += printable(*i);
+    return result;
 }
 
 int main(int argc, char* argv[])
@@ -36,6 +60,25 @@ int main(int argc, char* argv[])
     fd_set server_fds;
     socklen_t client_addr_size;
     struct sockaddr_in server_addr, client_addr;
+
+    ctrl_message_add_client* msg = dynamic_cast<ctrl_message_add_client*>(ctrl_msg_fact::create_msg(CTRL_MSG_ADD_CLIENT));
+    msg->set_socket_id(1234);
+    string ip_addr = "10.10.10.10";
+    msg->set_client_ip_addr(ip_addr);
+    
+    return 0;
+#if 0
+    ostringstream& str_stream = msg.serialize();
+    cout << printable(str_stream.str()) << endl;
+
+    ctrl_message_add_client deser_msg;
+
+    istringstream ser_stream(str_stream.str());
+    cout << printable(str_stream.str()) << endl;
+    deser_msg.deserialize(ser_stream);
+
+    return 0; 
+#endif
 
     exit_mainloop = false;
 
