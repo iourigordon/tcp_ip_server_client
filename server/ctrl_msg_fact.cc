@@ -6,37 +6,37 @@ using namespace std;
 #include "ctrl_msg_fact.h"
 #include "ctrl_message.h"
 
-ctrl_message*
+ctrl_msg*
 ctrl_msg_fact::
-create_msg(ctrl_message_id Id)
+create_msg(ctrl_msg_id Id)
 {
     switch(Id) {
         case CTRL_MSG_ADD_CLIENT:
-            return new ctrl_message_add_client();
+            return new ctrl_msg_add_client();
             break;
         case CTRL_MSG_ACK:
-            return new ctrl_message_ack();
+            return new ctrl_msg_ack();
             break;
         case CTRL_MSG_NACK:
-            return new ctrl_message_nack();
+            return new ctrl_msg_nack();
             break;
     }
     return NULL;
 }
 
-ctrl_message*
+ctrl_msg*
 ctrl_msg_fact::
 deserialize_stream(istringstream& InStream)
 {
-    ctrl_message* ctrl_msg = new ctrl_message();
+    ctrl_msg* msg_base = new ctrl_msg();
 
-    ctrl_msg->deserialize(InStream);
-    switch (ctrl_msg->get_msg_id()) {
+    msg_base->deserialize(InStream);
+    switch (msg_base->get_msg_id()) {
         case CTRL_MSG_ADD_CLIENT: {
-            ctrl_message_add_client* msg = new ctrl_message_add_client();
+            ctrl_msg_add_client* msg = new ctrl_msg_add_client();
             msg->deserialize(InStream);
-            delete ctrl_msg;
-            ctrl_msg = dynamic_cast<ctrl_message*>(msg);
+            delete msg_base;
+            msg_base = dynamic_cast<ctrl_msg*>(msg);
             break;
         }
         case CTRL_MSG_ACK:
@@ -44,5 +44,5 @@ deserialize_stream(istringstream& InStream)
         case CTRL_MSG_NACK:
             break;
     }
-    return ctrl_msg;
+    return msg_base;
 }

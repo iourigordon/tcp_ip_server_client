@@ -1,33 +1,20 @@
 #ifndef __CTRL_MESSAGE_H__
 #define __CTRL_MESSAGE_H__
 
-class ctrl_message
+class ctrl_msg
 {
     public:
 
         friend class ctrl_msg_fact;
 
-        ctrl_message() {};
-        ctrl_message(ctrl_message_id Id): m_MsgId(Id) {};
+        ctrl_msg() {};
+        ctrl_msg(ctrl_msg_id Id): m_MsgId(Id) {};
 
         int get_msg_id() {return m_MsgId;}
 
         virtual ostringstream& serialize();
 
     protected:
-
-
-        template<class T>
-        void serialize_type(T Val, size_t ByteSize);
-
-        template<class T>
-        void serialize_type(T Val);
-
-        template<class T>
-        T deserialize_type(istringstream& Stream);
-
-        template<class T>
-        void deserialize_type(istringstream& Stream, T& Val);
 
         int m_MsgId;
         ostringstream m_Stream;
@@ -36,13 +23,13 @@ class ctrl_message
         virtual void deserialize(istringstream& ser_stream);
 };
 
-class ctrl_message_add_client: public ctrl_message
+class ctrl_msg_add_client: public ctrl_msg
 {
     public:
         friend class ctrl_msg_fact;
 
-        ctrl_message_add_client():ctrl_message(CTRL_MSG_ADD_CLIENT) {};
-        ctrl_message_add_client(int SockId, string ClientIpAddr);
+        ctrl_msg_add_client():ctrl_msg(CTRL_MSG_ADD_CLIENT) {};
+        ctrl_msg_add_client(int SockId, string ClientIpAddr);
 
         ostringstream& serialize();
 
@@ -60,12 +47,12 @@ class ctrl_message_add_client: public ctrl_message
         string m_ClientIpAddr;
 };
 
-class ctrl_message_ack: public ctrl_message
+class ctrl_msg_ack: public ctrl_msg
 {
     public:
         friend class ctrl_msg_fact;
 
-        ctrl_message_ack():ctrl_message(CTRL_MSG_ACK) {};
+        ctrl_msg_ack():ctrl_msg(CTRL_MSG_ACK) {};
         ostringstream& serialize();
 
     private:
@@ -73,12 +60,12 @@ class ctrl_message_ack: public ctrl_message
 
 };
 
-class ctrl_message_nack : public ctrl_message
+class ctrl_msg_nack : public ctrl_msg
 {
     public:
         friend class ctrl_msg_fact;
 
-        ctrl_message_nack():ctrl_message(CTRL_MSG_NACK) {};
+        ctrl_msg_nack():ctrl_msg(CTRL_MSG_NACK) {};
         ostringstream& serialize();
 
     private:

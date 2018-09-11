@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
     socklen_t client_addr_size;
     struct sockaddr_in server_addr, client_addr;
 
-    ctrl_message_add_client* msg = dynamic_cast<ctrl_message_add_client*>(ctrl_msg_fact::create_msg(CTRL_MSG_ADD_CLIENT));
+    ctrl_msg_add_client* msg = dynamic_cast<ctrl_msg_add_client*>(ctrl_msg_fact::create_msg(CTRL_MSG_ADD_CLIENT));
     msg->set_socket_id(1234);
     string ip_addr = "10.10.10.10";
     msg->set_client_ip_addr(ip_addr);
@@ -70,9 +70,9 @@ int main(int argc, char* argv[])
    
 
     istringstream ser_stream(str_stream.str());
-    ctrl_message* deser_msg = ctrl_msg_fact::deserialize_stream(ser_stream);
+    ctrl_msg* deser_msg = ctrl_msg_fact::deserialize_stream(ser_stream);
 
-    ctrl_message_add_client* client_msg = dynamic_cast<ctrl_message_add_client*>(deser_msg);
+    ctrl_msg_add_client* client_msg = dynamic_cast<ctrl_msg_add_client*>(deser_msg);
     cout << "SockID = " << client_msg->get_socket_id() << "; IP addr = " << client_msg->get_client_ip_addr() << endl;
 
     return 0;
