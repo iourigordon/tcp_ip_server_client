@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
     msg->set_socket_id(1234);
     string ip_addr = "10.10.10.10";
     msg->set_client_ip_addr(ip_addr);
-    ostringstream& str_stream = msg->serialize();
+    ostringstream& str_stream = ctrl_msg_fact::serialize_message(msg);
     cout << printable(str_stream.str()) << endl;
    
 

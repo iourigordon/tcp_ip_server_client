@@ -16,8 +16,9 @@ class ctrl_msg;
 class ctrl_msg_fact 
 {
     public:
-        static ctrl_msg*  create_msg(ctrl_msg_id Id);
-        static ctrl_msg*  deserialize_stream(istringstream& InStream);
+        static ctrl_msg*        create_msg(ctrl_msg_id Id);
+        static ostringstream&   serialize_message(ctrl_msg* Msg);
+        static ctrl_msg*        deserialize_stream(istringstream& InStream);
 
 
     private:

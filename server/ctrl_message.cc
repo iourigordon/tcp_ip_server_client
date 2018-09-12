@@ -54,31 +54,3 @@ deserialize(istringstream& SerStream)
     cout << "Deserialized m_SockId " << m_SockId << endl;
     cout << "Deserialized m_ClientIpAddr " << m_ClientIpAddr << endl;
 }
-
-ostringstream&
-ctrl_msg_ack::
-serialize()
-{
-    ctrl_msg_fact::serialize_type<int>(m_MsgId,m_Stream);
-    return m_Stream;
-}
-
-void
-ctrl_msg_ack::
-deserialize(istringstream& SerStream)
-{
-}
-
-ostringstream&
-ctrl_msg_nack::
-serialize()
-{
-    ctrl_msg_fact::serialize_type<int>(m_MsgId,m_Stream);
-    return m_Stream;
-}
-
-void
-ctrl_msg_nack::
-deserialize(istringstream& SerStream)
-{
-}

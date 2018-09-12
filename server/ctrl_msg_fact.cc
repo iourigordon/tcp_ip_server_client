@@ -24,25 +24,37 @@ create_msg(ctrl_msg_id Id)
     return NULL;
 }
 
+ostringstream&
+ctrl_msg_fact::
+serialize_message(ctrl_msg* Msg)
+{
+    return Msg->serialize();
+}
+
 ctrl_msg*
 ctrl_msg_fact::
 deserialize_stream(istringstream& InStream)
 {
-    ctrl_msg* msg_base = new ctrl_msg();
+    ctrl_msg* msg_base;
+    int msg_id = deserialize_type<int>(InStream);
 
-    msg_base->deserialize(InStream);
-    switch (msg_base->get_msg_id()) {
+    switch (msg_id) {
         case CTRL_MSG_ADD_CLIENT: {
             ctrl_msg_add_client* msg = new ctrl_msg_add_client();
             msg->deserialize(InStream);
-            delete msg_base;
             msg_base = dynamic_cast<ctrl_msg*>(msg);
             break;
         }
-        case CTRL_MSG_ACK:
+        case CTRL_MSG_ACK: {
+            ctrl_msg_ack* msg = new ctrl_msg_ack();
+            msg_base = dynamic_cast<ctrl_msg_ack*>(msg); 
             break;
-        case CTRL_MSG_NACK:
+        }
+        case CTRL_MSG_NACK: {
+            ctrl_msg_nack* msg = new ctrl_msg_nack();
+            msg_base = dynamic_cast<ctrl_msg_nack*>(msg);
             break;
+        }
     }
     return msg_base;
 }
