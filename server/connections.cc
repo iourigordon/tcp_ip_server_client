@@ -4,11 +4,14 @@
 
 #include <map>
 #include <cstddef>
+#include <sstream>
 #include <iostream>
 
 using namespace std;
 
 #include "connections.h"
+#include "ctrl_msg_fact.h"
+#include "ctrl_message.h"
 
 #define BUF_LENGTH 1024
 
@@ -45,8 +48,9 @@ connections::add_connection(int client_socket)
 int
 connections::run()
 {
-    char buff[BUF_LENGTH];
+    int ret;
     fd_set working_set;
+    char buff[BUF_LENGTH];
 
     cout << "Connections Proc is running" << endl;
 
@@ -54,16 +58,24 @@ connections::run()
         for (map<int,string>::iterator fd = m_FdDescMap.begin(); fd != m_FdDescMap.end(); fd ++) {
             if (fd->first != m_CtrlOut){
                 FD_SET(fd->first,&working_set);
-                if (fd->first > m_MaxFd)
-                    m_MaxFd = fd->first;
+                m_MaxFd = max(fd->first,m_MaxFd);
             }
         }
         memset(buff,0,BUF_LENGTH);
         if (select(m_MaxFd+1,&working_set,NULL,NULL,NULL) != -1) {
+            cout << "select returned" << endl;
             for (map<int,string>::iterator fd = m_FdDescMap.begin(); fd != m_FdDescMap.end(); fd++) {
-               if (FD_ISSET(fd->first,&working_set)) {
-                    if (::read(fd->first,buff,BUF_LENGTH) != -1) {
-                        cout << "Received " << (char*)buff << " from " << fd->second << endl;
+                if (FD_ISSET(fd->first,&working_set)) {
+                    if (fd->first == m_CtrlIn) {
+                        if ((ret = ::read(fd->first,buff,BUF_LENGTH)) != -1) {
+                            istringstream in_stream(string(buff,ret));
+                            ctrl_msg* msg = ctrl_msg_fact::deserialize_stream(in_stream);
+
+                            if (msg->get_msg_id() == CTRL_MSG_ADD_CLIENT) {
+                                ctrl_msg_add_client* client_msg = dynamic_cast<ctrl_msg_add_client*>(msg);
+                                cout << "SockID = " << client_msg->get_socket_id() << "; IP addr = " << client_msg->get_client_ip_addr() << endl;
+                            }
+                        }
                     }                
                 }
             }

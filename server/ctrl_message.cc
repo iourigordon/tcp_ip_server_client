@@ -50,7 +50,4 @@ deserialize(istringstream& SerStream)
 {
     m_SockId = ctrl_msg_fact::deserialize_type<int>(SerStream);
     ctrl_msg_fact::deserialize_type<string>(SerStream,m_ClientIpAddr);
-    cout << "Deserialized m_MsgId " << m_MsgId << endl; 
-    cout << "Deserialized m_SockId " << m_SockId << endl;
-    cout << "Deserialized m_ClientIpAddr " << m_ClientIpAddr << endl;
 }

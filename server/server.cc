@@ -61,6 +61,7 @@ int main(int argc, char* argv[])
     socklen_t client_addr_size;
     struct sockaddr_in server_addr, client_addr;
 
+#if 0
     ctrl_msg_add_client* msg = dynamic_cast<ctrl_msg_add_client*>(ctrl_msg_fact::create_msg(CTRL_MSG_ADD_CLIENT));
     msg->set_socket_id(1234);
     string ip_addr = "10.10.10.10";
@@ -74,10 +75,6 @@ int main(int argc, char* argv[])
 
     ctrl_msg_add_client* client_msg = dynamic_cast<ctrl_msg_add_client*>(deser_msg);
     cout << "SockID = " << client_msg->get_socket_id() << "; IP addr = " << client_msg->get_client_ip_addr() << endl;
-
-    return 0;
-#if 0
-
 
     cout << printable(str_stream.str()) << endl;
     deser_msg.deserialize(ser_stream);
@@ -166,8 +163,15 @@ int main(int argc, char* argv[])
                         close(to_prnt_pipe[1]);
 
                         //add connects proc to the vector of available ones
-                        //send client socket to the forked process
-                        write(to_chld_pipe[1],"hello",6);
+                        ctrl_msg_add_client* msg = dynamic_cast<ctrl_msg_add_client*>(ctrl_msg_fact::create_msg(CTRL_MSG_ADD_CLIENT));
+                        msg->set_socket_id(client_sock);
+                        string ip_addr = inet_ntoa(client_addr.sin_addr);
+                        msg->set_client_ip_addr(ip_addr);
+                        ostringstream& msg_stream = ctrl_msg_fact::serialize_message(msg);
+
+                        cout << "Adding sock = " << msg->get_socket_id() << " for " << msg->get_client_ip_addr() << endl;
+                        write(to_chld_pipe[1],msg_stream.str().c_str(),msg_stream.str().size());
+                        delete msg;
                     } else {
                         //child process
                         close(to_chld_pipe[1]);
