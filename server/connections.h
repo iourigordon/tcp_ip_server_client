@@ -12,13 +12,19 @@ public:
 
 private:
 
+    class client_info {
+        friend class connections;
+        int    num_msgs;
+        string desc;
+    };
+
     static connections* connections_pool;
 
     int m_CtrlIn;
     int m_CtrlOut;    
     int m_MaxFd;
 
-    map<int,string> m_FdDescMap;
+    map<int,client_info> m_FdDescMap;
 };
 
 #endif

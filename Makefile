@@ -17,19 +17,19 @@ CLIENT_OBJ_FILES = $(patsubst %.cc, $(OBJ_DIR)/%.o, $(notdir $(CLIENT_SRC)))
 all: $(TARGET_SRV) $(TARGET_CLT)
 
 $(TARGET_SRV): $(OBJ_DIR) $(SERVER_OBJ_FILES)
-	@echo "Linking " $(SERVER_OBJ_FILES)
+	@echo "Linking " $@
 	@$(CXX) $(CXXFLAGS) $(SERVER_OBJ_FILES) -o $@
 
 $(TARGET_CLT): $(OBJ_DIR) $(CLIENT_OBJ_FILES)
-	@echo "Linking " $(CLIENT_OBJ_FILES)
+	@echo "Linking " $@
 	@$(CXX) $(CXXFLAGS) $(CLIENT_OBJ_FILES) -o $@
 
 $(OBJ_DIR)/%.o: $(SERVER_DIR)/%.cc 
-	@echo "Compiling " $@ " from : " $^
+	@echo "Compiling " $^
 	@$(CXX) $(CXXFLAGS) -c $^ -o $@
 
 $(OBJ_DIR)/%.o: $(CLIENT_DIR)/%.cc
-	@echo "Compiling " $@ " from : " $^
+	@echo "Compiling " $^
 	@$(CXX) $(CXXFLAGS) -c $^ -o $@
 
 $(OBJ_DIR):
