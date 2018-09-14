@@ -9,6 +9,7 @@
 
 
 #include <map>
+#include <vector>
 #include <sstream>
 #include <iostream>
 #include <iomanip>
@@ -18,8 +19,10 @@ using namespace std;
 #include "connections.h"
 #include "ctrl_msg_fact.h"
 #include "ctrl_message.h"
+#include "connections_ctrl.h"
 
 #define MAX_PEND_CONNS 10
+#define MAX_PROCS 2
 
 bool exit_mainloop;
 
@@ -61,27 +64,6 @@ int main(int argc, char* argv[])
     socklen_t client_addr_size;
     struct sockaddr_in server_addr, client_addr;
 
-#if 0
-    ctrl_msg_add_client* msg = dynamic_cast<ctrl_msg_add_client*>(ctrl_msg_fact::create_msg(CTRL_MSG_ADD_CLIENT));
-    msg->set_socket_id(1234);
-    string ip_addr = "10.10.10.10";
-    msg->set_client_ip_addr(ip_addr);
-    ostringstream& str_stream = ctrl_msg_fact::serialize_message(msg);
-    cout << printable(str_stream.str()) << endl;
-   
-
-    istringstream ser_stream(str_stream.str());
-    ctrl_msg* deser_msg = ctrl_msg_fact::deserialize_stream(ser_stream);
-
-    ctrl_msg_add_client* client_msg = dynamic_cast<ctrl_msg_add_client*>(deser_msg);
-    cout << "SockID = " << client_msg->get_socket_id() << "; IP addr = " << client_msg->get_client_ip_addr() << endl;
-
-    cout << printable(str_stream.str()) << endl;
-    deser_msg.deserialize(ser_stream);
-
-    return 0; 
-#endif
-
     exit_mainloop = false;
 
     signal(SIGINT,signal_hdlr);
@@ -122,65 +104,71 @@ int main(int argc, char* argv[])
         FD_ZERO(&server_fds);
         FD_SET(server_sock,&server_fds);
 
+        cout << "Going into select" << endl;
         if ((ret = select(server_sock+1,&server_fds,NULL,NULL,NULL)) != -1) {
             client_addr_size = sizeof(sockaddr_in);
             if ((client_sock = accept(server_sock,(struct sockaddr*)&client_addr,&client_addr_size)) != -1) {
-                cout << "Incoming connection from " << inet_ntoa(client_addr.sin_addr) << endl;
-                if (child_pid) {
-                    //send new socket fd to child
-                } else {
-                    if (pipe(to_chld_pipe) != 0) {
-                        if (close(client_sock)) {
-                            fprintf(stderr,"ERROR: couldn't create comm pipe\n");
-                            break;
-                        }                        
-                    }
-                    if (pipe(to_prnt_pipe) != 0) {
-                        if (close(to_chld_pipe[0]))
-                                fprintf(stderr,"ERROR: failed to close fd\n");
-                        if (close(to_chld_pipe[1]))
-                                fprintf(stderr,"ERROR: failes to close fd\n");
-                        if (close(client_sock)) {
-                            fprintf(stderr,"ERROR: couldn't create comm pipe\n");
-                            break;
-                        }                        
-                    }
-                    //there is on connections proc yet, let's fork one
-                    if ((child_pid = fork()) == -1) {
-                        fprintf(stderr, "ERROR: failed to fork connections proc\n");
-                        for (int i=0;i<2;i++) {
-                            if (close(to_chld_pipe[i]))
-                                fprintf(stderr,"ERROR: failed to close fd\n");
-                            if (close(to_prnt_pipe[i]))
-                                fprintf(stderr,"ERROR: failed to close fd\n");
-                        }    
-                        if (close(client_sock)) {
-                            fprintf(stderr,"ERROR: couldn't fork connections proc\n");
-                            break;
+                cout << "Incoming connection from " << inet_ntoa(client_addr.sin_addr) <<  " on Sock " << client_sock  << endl;
+                connections_ctrl* ctrl = connections_ctrl::get_conn_ctrl(MAX_PROCS);
+                switch (ctrl->add_client(client_sock,inet_ntoa(client_addr.sin_addr))) {
+                    case SUCCESS:
+                        cout << "Client was added to server connections" << endl;
+                        break;
+                    case CREATE_CONN:
+                        memset(to_chld_pipe,0,sizeof(to_chld_pipe));
+                        memset(to_prnt_pipe,0,sizeof(to_prnt_pipe));
+                        if (pipe(to_chld_pipe) != 0) {
+                            if (close(client_sock)) {
+                                fprintf(stderr,"ERROR: couldn't create comm pipe\n");
+                                break;
+                            } 
                         }
-                    } else if (child_pid) {
-                        close(to_chld_pipe[0]);
-                        close(to_prnt_pipe[1]);
+                        if (pipe(to_prnt_pipe) != 0) {
+                            if (close(to_chld_pipe[0]))
+                                    fprintf(stderr,"ERROR: failed to close fd\n");
+                            if (close(to_chld_pipe[1]))
+                                    fprintf(stderr,"ERROR: failes to close fd\n");
+                            if (close(client_sock)) {
+                                fprintf(stderr,"ERROR: couldn't create comm pipe\n");
+                                break;
+                            }                        
+                        }
+                        
+                        if ((child_pid = fork()) == -1) {
+                            fprintf(stderr, "ERROR: failed to fork connections proc\n");
+                            for (int i=0;i<2;i++) {
+                                if (close(to_chld_pipe[i]))
+                                    fprintf(stderr,"ERROR: failed to close fd\n");
+                                if (close(to_prnt_pipe[i]))
+                                    fprintf(stderr,"ERROR: failed to close fd\n");
+                            }    
+                            if (close(client_sock)) {
+                                fprintf(stderr,"ERROR: couldn't fork connections proc\n");
+                                break;
+                            }
+                        } else if (child_pid) {
+                            close(to_chld_pipe[0]);
+                            close(to_prnt_pipe[1]);
 
-                        //add connects proc to the vector of available ones
-                        ctrl_msg_add_client* msg = dynamic_cast<ctrl_msg_add_client*>(ctrl_msg_fact::create_msg(CTRL_MSG_ADD_CLIENT));
-                        msg->set_socket_id(client_sock);
-                        string ip_addr = inet_ntoa(client_addr.sin_addr);
-                        msg->set_client_ip_addr(ip_addr);
-                        ostringstream& msg_stream = ctrl_msg_fact::serialize_message(msg);
+                            ctrl->add_new_proc(child_pid,to_chld_pipe[1],to_prnt_pipe[0]); 
+                            ctrl->add_client(client_sock,inet_ntoa(client_addr.sin_addr));
+                        } else {
+                            //child process
+                            close(to_chld_pipe[1]);
+                            close(to_prnt_pipe[0]);                        
 
-                        cout << "Adding sock = " << msg->get_socket_id() << " for " << msg->get_client_ip_addr() << endl;
-                        write(to_chld_pipe[1],msg_stream.str().c_str(),msg_stream.str().size());
-                        delete msg;
-                    } else {
-                        //child process
-                        close(to_chld_pipe[1]);
-                        close(to_prnt_pipe[0]);                        
-
-                        connections *client_connections = connections::get_connection(to_chld_pipe[0],to_prnt_pipe[1]);
-                        client_connections->run();
-                    }
+                            connections *client_connections = connections::get_connection(to_chld_pipe[0],to_prnt_pipe[1]);
+                            client_connections->run();
+                        }
+                        break;
+                    case OUT_OF_CONN:
+                        cout << "Server is out of capacity, closing client socket" << endl;
+                        if (close(client_sock)) {
+                            fprintf(stderr,"ERROR: couldn't close client socket\n");
+                        } 
+                        break;
                 }
+
             } else {
                 cout << "ERROR: accepting client connection " << strerror(errno) << endl;
             }

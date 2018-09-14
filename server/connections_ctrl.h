@@ -10,11 +10,12 @@ typedef enum _add_new_conn_action {
 class connections_ctrl
 {
     public:
-        connections_ctrl(int MaxProcs):m_MaxProcs(MaxProcs) {}
-    
+        static connections_ctrl* get_conn_ctrl(int MaxProcs = 0); 
         add_new_conn_action add_client(int SockId, string IpAddr); 
-    private:
+        void add_new_proc(pid_t ProcId, int ToChld, int ToPrnt);
 
+    private:
+        connections_ctrl(int MaxProcs):m_MaxProcs(MaxProcs) {}
         class proc_io {
             friend class connections_ctrl;
 
@@ -25,6 +26,8 @@ class connections_ctrl
 
         int m_MaxProcs;
         vector<proc_io> m_Procs;
+
+        static connections_ctrl* m_Instance;
 };
 
 #endif

@@ -22,6 +22,8 @@ connections::connections(int ctrl_in, int ctrl_out):
 {   
     m_MaxFd = m_CtrlIn;
 
+    cout << "m_CtrlIn = " << m_CtrlIn << " m_CtrlOut = " << m_CtrlOut << endl;
+
     m_FdDescMap[m_CtrlIn].desc = "Control In";
     m_FdDescMap[m_CtrlOut].desc = "Control Out";
 }
@@ -56,8 +58,10 @@ connections::run()
 
     for(;;) {
         FD_ZERO(&working_set);
+        m_MaxFd = 0;
         for (map<int,client_info>::iterator fd = m_FdDescMap.begin(); fd != m_FdDescMap.end(); fd ++) {
             if (fd->first != m_CtrlOut){
+                cout << "Adding fd " << fd->first << " to working set" << endl;
                 FD_SET(fd->first,&working_set);
                 m_MaxFd = max(fd->first,m_MaxFd);
             }
@@ -75,6 +79,11 @@ connections::run()
                                 ctrl_msg_add_client* client_msg = dynamic_cast<ctrl_msg_add_client*>(msg);
                                 cout << "SockID = " << client_msg->get_socket_id() << "; IP addr = " << client_msg->get_client_ip_addr() << endl;
                                 m_FdDescMap[client_msg->get_socket_id()].desc = client_msg->get_client_ip_addr();
+                                delete client_msg;
+                                msg = ctrl_msg_fact::create_msg(CTRL_MSG_ACK);
+                                ostringstream& msg_stream = ctrl_msg_fact::serialize_message(msg);
+                                if (write(m_CtrlOut,msg_stream.str().c_str(),msg_stream.str().size()) != -1)
+                                    cout << "Stream added, ack sent" << endl;
                             }
                         }
                     } else {
