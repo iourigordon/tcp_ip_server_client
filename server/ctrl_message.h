@@ -14,7 +14,7 @@ class ctrl_msg
 
     protected:
         virtual ostringstream& serialize();
-        virtual void deserialize(istringstream& ser_stream);
+        virtual void deserialize(istringstream& InStream);
 
         int m_MsgId;
         ostringstream m_Stream;
@@ -33,7 +33,7 @@ class ctrl_msg_add_client: public ctrl_msg
     
     protected:
         ostringstream& serialize();
-        void deserialize(istringstream& SerStream);
+        void deserialize(istringstream& InStream);
 
     private:
         string m_ClientIpAddr;

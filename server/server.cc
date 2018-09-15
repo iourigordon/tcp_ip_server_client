@@ -107,7 +107,6 @@ int main(int argc, char* argv[])
         FD_ZERO(&server_fds);
         FD_SET(server_sock,&server_fds);
 
-        cout << "Going into select" << endl;
         if ((ret = select(server_sock+1,&server_fds,NULL,NULL,NULL)) != -1) {
             client_addr_size = sizeof(sockaddr_in);
             if ((client_sock = accept(server_sock,(struct sockaddr*)&client_addr,&client_addr_size)) != -1) {

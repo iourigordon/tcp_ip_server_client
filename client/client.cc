@@ -46,6 +46,7 @@ int main(int argc, char* argv[])
     for (int i=0; i<MAX_MESSAGES; i++) {
         memset(buff,0,BUFF_LENGTH);
         sprintf(buff,"Hello");
+        sleep(1);
         if (write(server_sock,buff,strlen(buff)+1) != -1) {
             cout << "Message Sent" << endl;
             FD_ZERO(&server_fd);

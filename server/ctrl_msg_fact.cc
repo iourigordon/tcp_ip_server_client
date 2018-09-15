@@ -39,7 +39,7 @@ ctrl_msg_fact::
 deserialize_stream(istringstream& InStream)
 {
     ctrl_msg* msg_base;
-    int msg_id = deserialize_type<int>(InStream);
+    int msg_id = ctrl_msg_fact::deserialize_type<int>(InStream);
 
     switch (msg_id) {
         case CTRL_MSG_ADD_CLIENT: {

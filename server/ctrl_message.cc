@@ -12,15 +12,14 @@ ctrl_msg::serialize()
     m_Stream.str("");
     m_Stream.clear();
 
-    ctrl_msg_fact::test();
     ctrl_msg_fact::serialize_type<int>(m_MsgId,m_Stream);
     return m_Stream;
 }
 
 void
-ctrl_msg::deserialize(istringstream& ser_stream)
+ctrl_msg::deserialize(istringstream& InStream)
 {
-    m_MsgId = ctrl_msg_fact::deserialize_type<int>(ser_stream);
+    m_MsgId = ctrl_msg_fact::deserialize_type<int>(InStream);
 }
 
 ctrl_msg_add_client::
@@ -44,7 +43,7 @@ serialize()
 
 void
 ctrl_msg_add_client::
-deserialize(istringstream& SerStream)
+deserialize(istringstream& InStream)
 {
-    ctrl_msg_fact::deserialize_type<string>(SerStream,m_ClientIpAddr);
+    ctrl_msg_fact::deserialize_type<string>(InStream,m_ClientIpAddr);
 }

@@ -47,6 +47,7 @@ add_client(int SockId, string IpAddr)
     ostringstream& msg_stream = ctrl_msg_fact::serialize_message(msg);
     for(vector<proc_io>::iterator curr = m_Procs.begin();curr<m_Procs.end();curr++) {
         if (write(curr->m_PrntSock,msg_stream.str().c_str(),msg_stream.str().size()) != -1) {
+            delete msg;
             FD_ZERO(&conn_set);
             FD_SET(curr->m_PrntSock,&conn_set);
             if (select(curr->m_PrntSock+1,&conn_set,NULL,NULL,NULL) != -1) {
@@ -120,26 +121,34 @@ int
 connections_ctrl::
 send_client_sock(int CommSock, int FD, const char* IpAddr)
 {
-    struct msghdr msg = { 0 };
-    char buf[CMSG_SPACE(sizeof(FD))];
 
-    memset(buf, '\0', sizeof(buf));
-    struct iovec io = { .iov_base = (void*)IpAddr, .iov_len = strlen(IpAddr)+1 };
+    struct msghdr   msg;
+    struct iovec    iov[1];
 
-    msg.msg_iov = &io;
+    union {
+      struct cmsghdr    cm;
+      char              control[CMSG_SPACE(sizeof(int))];
+    } control_un;
+    struct cmsghdr  *cmptr;
+
+    msg.msg_control = control_un.control;
+    msg.msg_controllen = sizeof(control_un.control);
+
+    cmptr = CMSG_FIRSTHDR(&msg);
+    cmptr->cmsg_len = CMSG_LEN(sizeof(int));
+    cmptr->cmsg_level = SOL_SOCKET;
+    cmptr->cmsg_type = SCM_RIGHTS;
+    *((int *) CMSG_DATA(cmptr)) = FD;
+
+    msg.msg_name = NULL;
+    msg.msg_namelen = 0;
+
+    iov[0].iov_base = (void*)IpAddr;
+    iov[0].iov_len = strlen(IpAddr)+1;
+    msg.msg_iov = iov;
     msg.msg_iovlen = 1;
-    msg.msg_control = buf;
-    msg.msg_controllen = sizeof(buf);
 
-    struct cmsghdr * cmsg = CMSG_FIRSTHDR(&msg);
-    cmsg->cmsg_level = SOL_SOCKET;
-    cmsg->cmsg_type = SCM_RIGHTS;
-    cmsg->cmsg_len = CMSG_LEN(sizeof(FD));
-
-    memcpy(CMSG_DATA(cmsg),&FD,sizeof(FD));
-    msg.msg_controllen = cmsg->cmsg_len;
-
-    if (sendmsg(CommSock, &msg, 0) == -1)
+    if (sendmsg(CommSock,&msg,0) == -1)
         cout << "ERROR: sendmsg failed " << strerror(errno) << endl;
 
     return 0;
@@ -149,25 +158,42 @@ int
 connections_ctrl::
 receive_client_sock(int CommSock)
 {
-    int fd;
-    struct msghdr msg;
-    struct cmsghdr* cmsg;
-    char c_buffer[BUFF_LENGTH];
-    char m_buffer[BUFF_LENGTH];
-    struct iovec io = { .iov_base = m_buffer, .iov_len = sizeof(BUFF_LENGTH) };
+    struct msghdr   msg;
+    struct iovec    iov[1];
+    ssize_t         n;
+    int             newfd;
+    int             sock_fd;
+    char buff[BUFF_LENGTH];
 
-    memset(&msg,0,sizeof(struct msghdr));
-    msg.msg_iov = &io;
+    union {
+      struct cmsghdr    cm;
+      char              control[CMSG_SPACE(sizeof(int))];
+    } control_un;
+    struct cmsghdr  *cmptr;
+
+    msg.msg_control = control_un.control;
+    msg.msg_controllen = sizeof(control_un.control);
+    msg.msg_name = NULL;
+    msg.msg_namelen = 0;
+
+    iov[0].iov_base = buff;
+    iov[0].iov_len = BUFF_LENGTH;
+    msg.msg_iov = iov;
     msg.msg_iovlen = 1;
 
-    msg.msg_control = c_buffer;
-    msg.msg_controllen = BUFF_LENGTH;
+    if ( (n = recvmsg(CommSock, &msg, 0)) <= 0)
+        return(n);
 
-    if (recvmsg(CommSock, &msg, 0) < 0)
-        cout << "ERROR: recvmsg failed " << strerror(errno) << endl;
+    if ( (cmptr = CMSG_FIRSTHDR(&msg)) != NULL &&
+        cmptr->cmsg_len == CMSG_LEN(sizeof(int))) {
+        if (cmptr->cmsg_level != SOL_SOCKET)
+            cout << "control level != SOL_SOCKET" << endl;
+        if (cmptr->cmsg_type != SCM_RIGHTS)
+            cout << "control type != SCM_RIGHTS";
+        sock_fd = *((int *) CMSG_DATA(cmptr));
+    } else
+        sock_fd = -1;       /* descriptor was not passed */
 
-    cmsg = CMSG_FIRSTHDR(&msg);
-    memcpy(&fd,CMSG_DATA(cmsg),sizeof(fd));
-
-    return fd;
+    return sock_fd;
 }
+

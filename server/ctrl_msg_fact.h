@@ -57,7 +57,7 @@ class ctrl_msg_fact
 
         template<class T>
         static T deserialize_type(istringstream& Stream) {
-            T val;
+            T val{};
     
             size_t size_val;
             size_t size = sizeof val;
@@ -78,8 +78,6 @@ class ctrl_msg_fact
 
             Stream >> Val;
         }
-
-        static void test() {;}
 };
 
 #endif

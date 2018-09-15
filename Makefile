@@ -14,6 +14,8 @@ OBJ_DIR = obj
 SERVER_OBJ_FILES = $(patsubst %.cc, $(OBJ_DIR)/%.o, $(notdir $(SERVER_SRC)))
 CLIENT_OBJ_FILES = $(patsubst %.cc, $(OBJ_DIR)/%.o, $(notdir $(CLIENT_SRC)))
 
+#CXXFLAGS += -g
+
 all: $(TARGET_SRV) $(TARGET_CLT)
 
 $(TARGET_SRV): $(OBJ_DIR) $(SERVER_OBJ_FILES)

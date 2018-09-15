@@ -76,14 +76,13 @@ connections::run()
                                     ctrl_msg_add_client* client_msg = dynamic_cast<ctrl_msg_add_client*>(msg);
                                     cout << "Request for IP addr = " << client_msg->get_client_ip_addr() << endl;
                                     string client_ip = client_msg->get_client_ip_addr();
-                                    delete msg;
                                     delete client_msg;
                                     msg = ctrl_msg_fact::create_msg(CTRL_MSG_ACK);
                                     ostringstream& msg_stream = ctrl_msg_fact::serialize_message(msg);
                                     if (write(m_ChldSock,msg_stream.str().c_str(),msg_stream.str().size()) != -1) {
                                         int sock_id = connections_ctrl::receive_client_sock(fd->first);
                                         m_FdDescMap[sock_id].desc = client_ip;
-                                        cout << "Stream added" << endl;
+                                        cout << "Socket fd is received, stream added" << endl;
                                     }
                                     break;
                                 }
