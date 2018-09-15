@@ -23,6 +23,8 @@ using namespace std;
 
 #define MAX_PEND_CONNS 10
 #define MAX_PROCS 2
+#define PRNT_COMM_SOCK 0
+#define CHLD_COMM_SOCK 1
 
 bool exit_mainloop;
 
@@ -59,6 +61,7 @@ int main(int argc, char* argv[])
     int child_pid;
     int to_chld_pipe[2];
     int to_prnt_pipe[2];
+    int comm_socket[2];
 
     fd_set server_fds;
     socklen_t client_addr_size;
@@ -115,31 +118,15 @@ int main(int argc, char* argv[])
                         cout << "Client was added to server connections" << endl;
                         break;
                     case CREATE_CONN:
-                        memset(to_chld_pipe,0,sizeof(to_chld_pipe));
-                        memset(to_prnt_pipe,0,sizeof(to_prnt_pipe));
-                        if (pipe(to_chld_pipe) != 0) {
-                            if (close(client_sock)) {
-                                fprintf(stderr,"ERROR: couldn't create comm pipe\n");
-                                break;
-                            } 
-                        }
-                        if (pipe(to_prnt_pipe) != 0) {
-                            if (close(to_chld_pipe[0]))
-                                    fprintf(stderr,"ERROR: failed to close fd\n");
-                            if (close(to_chld_pipe[1]))
-                                    fprintf(stderr,"ERROR: failes to close fd\n");
-                            if (close(client_sock)) {
-                                fprintf(stderr,"ERROR: couldn't create comm pipe\n");
-                                break;
-                            }                        
-                        }
+                        if (connections_ctrl::create_connection(comm_socket)) {
+                            fprintf(stderr,"ERROR: couldn't create comm pipe\n");
+                            break;
+                        }                        
                         
                         if ((child_pid = fork()) == -1) {
                             fprintf(stderr, "ERROR: failed to fork connections proc\n");
                             for (int i=0;i<2;i++) {
-                                if (close(to_chld_pipe[i]))
-                                    fprintf(stderr,"ERROR: failed to close fd\n");
-                                if (close(to_prnt_pipe[i]))
+                                if (close(comm_socket[i]))
                                     fprintf(stderr,"ERROR: failed to close fd\n");
                             }    
                             if (close(client_sock)) {
@@ -147,17 +134,15 @@ int main(int argc, char* argv[])
                                 break;
                             }
                         } else if (child_pid) {
-                            close(to_chld_pipe[0]);
-                            close(to_prnt_pipe[1]);
+                            close(comm_socket[CHLD_COMM_SOCK]);
 
-                            ctrl->add_new_proc(child_pid,to_chld_pipe[1],to_prnt_pipe[0]); 
+                            ctrl->add_new_proc(child_pid,comm_socket[PRNT_COMM_SOCK]); 
                             ctrl->add_client(client_sock,inet_ntoa(client_addr.sin_addr));
                         } else {
                             //child process
-                            close(to_chld_pipe[1]);
-                            close(to_prnt_pipe[0]);                        
+                            close(comm_socket[PRNT_COMM_SOCK]);
 
-                            connections *client_connections = connections::get_connection(to_chld_pipe[0],to_prnt_pipe[1]);
+                            connections *client_connections = connections::get_connection(comm_socket[CHLD_COMM_SOCK]);
                             client_connections->run();
                         }
                         break;
@@ -174,6 +159,8 @@ int main(int argc, char* argv[])
             }
         } else {
             if ((errno = EINTR) && exit_mainloop) {
+                connections_ctrl* ctrl = connections_ctrl::get_conn_ctrl();
+                ctrl->shut_down_procs();
                 cout << "Server is shutting down" << endl;
                 break;
             }

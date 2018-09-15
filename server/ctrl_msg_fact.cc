@@ -20,6 +20,9 @@ create_msg(ctrl_msg_id Id)
         case CTRL_MSG_NACK:
             return new ctrl_msg_nack();
             break;
+        case CTRL_MSG_SHUT_DOWN:
+            return new ctrl_msg_shutdown();
+            break;
     }
     return NULL;
 }
@@ -53,6 +56,11 @@ deserialize_stream(istringstream& InStream)
         case CTRL_MSG_NACK: {
             ctrl_msg_nack* msg = new ctrl_msg_nack();
             msg_base = dynamic_cast<ctrl_msg_nack*>(msg);
+            break;
+        }
+        case CTRL_MSG_SHUT_DOWN: {
+            ctrl_msg_shutdown* msg = new ctrl_msg_shutdown();
+            msg_base = dynamic_cast<ctrl_msg_shutdown*>(msg);
             break;
         }
     }

@@ -24,9 +24,8 @@ ctrl_msg::deserialize(istringstream& ser_stream)
 }
 
 ctrl_msg_add_client::
-ctrl_msg_add_client(int SockId, string ClientIpAddr):
-                        ctrl_msg(CTRL_MSG_ADD_CLIENT), m_SockId(SockId),
-                        m_ClientIpAddr(ClientIpAddr)
+ctrl_msg_add_client(string ClientIpAddr):
+                    ctrl_msg(CTRL_MSG_ADD_CLIENT), m_ClientIpAddr(ClientIpAddr)
 {
 }
 
@@ -38,7 +37,6 @@ serialize()
     m_Stream.clear();
 
     ctrl_msg_fact::serialize_type<int>(m_MsgId,m_Stream);
-    ctrl_msg_fact::serialize_type<int>(m_SockId,m_Stream);
     ctrl_msg_fact::serialize_type<string>(m_ClientIpAddr,m_ClientIpAddr.size(),m_Stream);
 
     return m_Stream;
@@ -48,6 +46,5 @@ void
 ctrl_msg_add_client::
 deserialize(istringstream& SerStream)
 {
-    m_SockId = ctrl_msg_fact::deserialize_type<int>(SerStream);
     ctrl_msg_fact::deserialize_type<string>(SerStream,m_ClientIpAddr);
 }

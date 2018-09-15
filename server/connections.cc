@@ -3,6 +3,7 @@
 #include <sys/select.h>
 
 #include <map>
+#include <vector>
 #include <cstddef>
 #include <sstream>
 #include <iostream>
@@ -12,20 +13,18 @@ using namespace std;
 #include "connections.h"
 #include "ctrl_msg_fact.h"
 #include "ctrl_message.h"
+#include "connections_ctrl.h"
 
 #define BUF_LENGTH 1024
 
 connections* connections::connections_pool = NULL;
 
-connections::connections(int ctrl_in, int ctrl_out):
-                         m_CtrlIn(ctrl_in), m_CtrlOut(ctrl_out)
+connections::connections(int ChldSock): m_ChldSock(ChldSock)
 {   
-    m_MaxFd = m_CtrlIn;
+    m_MaxFd = m_ChldSock;
 
-    cout << "m_CtrlIn = " << m_CtrlIn << " m_CtrlOut = " << m_CtrlOut << endl;
 
-    m_FdDescMap[m_CtrlIn].desc = "Control In";
-    m_FdDescMap[m_CtrlOut].desc = "Control Out";
+    m_FdDescMap[m_ChldSock].desc = "Control";
 }
 
 connections::~connections()
@@ -33,10 +32,10 @@ connections::~connections()
 }
 
 connections*
-connections::get_connection(int ctrl_in, int ctrl_out)
+connections::get_connection(int ChldSock)
 {
     if (connections_pool == NULL)
-        connections_pool = new connections(ctrl_in,ctrl_out);
+        connections_pool = new connections(ChldSock);
 
     return connections_pool;
 }
@@ -60,30 +59,43 @@ connections::run()
         FD_ZERO(&working_set);
         m_MaxFd = 0;
         for (map<int,client_info>::iterator fd = m_FdDescMap.begin(); fd != m_FdDescMap.end(); fd ++) {
-            if (fd->first != m_CtrlOut){
-                cout << "Adding fd " << fd->first << " to working set" << endl;
-                FD_SET(fd->first,&working_set);
-                m_MaxFd = max(fd->first,m_MaxFd);
-            }
+            FD_SET(fd->first,&working_set);
+            m_MaxFd = max(fd->first,m_MaxFd);
         }
         memset(buff,0,BUF_LENGTH);
         if (select(m_MaxFd+1,&working_set,NULL,NULL,NULL) != -1) {
             for (map<int,client_info>::iterator fd = m_FdDescMap.begin(); fd != m_FdDescMap.end(); fd++) {
                 if (FD_ISSET(fd->first,&working_set)) {
-                    if (fd->first == m_CtrlIn) {
+                    if (fd->first == m_ChldSock) {
                         if ((ret = ::read(fd->first,buff,BUF_LENGTH)) != -1) {
                             istringstream in_stream(string(buff,ret));
                             ctrl_msg* msg = ctrl_msg_fact::deserialize_stream(in_stream);
 
-                            if (msg->get_msg_id() == CTRL_MSG_ADD_CLIENT) {
-                                ctrl_msg_add_client* client_msg = dynamic_cast<ctrl_msg_add_client*>(msg);
-                                cout << "SockID = " << client_msg->get_socket_id() << "; IP addr = " << client_msg->get_client_ip_addr() << endl;
-                                m_FdDescMap[client_msg->get_socket_id()].desc = client_msg->get_client_ip_addr();
-                                delete client_msg;
-                                msg = ctrl_msg_fact::create_msg(CTRL_MSG_ACK);
-                                ostringstream& msg_stream = ctrl_msg_fact::serialize_message(msg);
-                                if (write(m_CtrlOut,msg_stream.str().c_str(),msg_stream.str().size()) != -1)
-                                    cout << "Stream added, ack sent" << endl;
+                            switch(msg->get_msg_id()) {
+                                case CTRL_MSG_ADD_CLIENT: {
+                                    ctrl_msg_add_client* client_msg = dynamic_cast<ctrl_msg_add_client*>(msg);
+                                    cout << "Request for IP addr = " << client_msg->get_client_ip_addr() << endl;
+                                    string client_ip = client_msg->get_client_ip_addr();
+                                    delete msg;
+                                    delete client_msg;
+                                    msg = ctrl_msg_fact::create_msg(CTRL_MSG_ACK);
+                                    ostringstream& msg_stream = ctrl_msg_fact::serialize_message(msg);
+                                    if (write(m_ChldSock,msg_stream.str().c_str(),msg_stream.str().size()) != -1) {
+                                        int sock_id = connections_ctrl::receive_client_sock(fd->first);
+                                        m_FdDescMap[sock_id].desc = client_ip;
+                                        cout << "Stream added" << endl;
+                                    }
+                                    break;
+                                }
+                                case CTRL_MSG_SHUT_DOWN:
+                                    cout << "Got Shut Down Message, closing fds" << endl;
+                                    for (map<int,client_info>::iterator fd = m_FdDescMap.begin(); fd != m_FdDescMap.end(); fd++) {
+                                        if (close(fd->first) != 0) {
+                                            cout << "ERROR closing " << fd->first << endl;
+                                        }
+                                    }
+                                    cout << "Connections Proc is Over" << endl;
+                                    exit(SUCCESS);
                             }
                         }
                     } else {

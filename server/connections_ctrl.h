@@ -1,18 +1,23 @@
 #ifndef __CONNECTIONS_CTRL_H__
 #define __CONNECTINOS_CTRL_H__
 
-typedef enum _add_new_conn_action {
+typedef enum _ADD_CONN_ACTION {
     SUCCESS,
     CREATE_CONN,
     OUT_OF_CONN
-} add_new_conn_action;
+} ADD_CONN_ACTION;
 
 class connections_ctrl
 {
     public:
         static connections_ctrl* get_conn_ctrl(int MaxProcs = 0); 
-        add_new_conn_action add_client(int SockId, string IpAddr); 
-        void add_new_proc(pid_t ProcId, int ToChld, int ToPrnt);
+        static int create_connection(int fds[2]);
+        static int send_client_sock(int CommSock, int FD, const char* IpAddr);
+        static int receive_client_sock(int CommSock);
+
+        ADD_CONN_ACTION add_client(int SockId, string IpAddr); 
+        void add_new_proc(pid_t ProcId, int PrntSock);
+        void shut_down_procs();
 
     private:
         connections_ctrl(int MaxProcs):m_MaxProcs(MaxProcs) {}
@@ -20,8 +25,7 @@ class connections_ctrl
             friend class connections_ctrl;
 
             pid_t m_ProcId;
-            int m_ToChld;
-            int m_ToPrnt;
+            int m_PrntSock;
         };
 
         int m_MaxProcs;

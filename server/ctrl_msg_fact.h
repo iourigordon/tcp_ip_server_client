@@ -7,7 +7,8 @@
 typedef enum _ctrl_msg_id {
     CTRL_MSG_ADD_CLIENT,
     CTRL_MSG_ACK,
-    CTRL_MSG_NACK
+    CTRL_MSG_NACK,
+    CTRL_MSG_SHUT_DOWN
 }ctrl_msg_id;
 
 
@@ -26,6 +27,7 @@ class ctrl_msg_fact
         friend class ctrl_msg_add_client;
         friend class ctrl_msg_ack;
         friend class ctrl_msg_nack;
+        friend class ctrl_msg_shut_down;
 
         static uint64_t hton(uint64_t n) { return htobe64(n); }
         static uint32_t hton(uint32_t n) { return htonl(n); }
