@@ -61,13 +61,18 @@ add_client(int SockId, string IpAddr)
                 if (FD_ISSET(curr->m_PrntSock,&conn_set) && ((ret = read(curr->m_PrntSock,buff,BUFF_LENGTH)) != -1)) {
                     istringstream in_stream(string(buff,ret));
                     ctrl_msg* msg = ctrl_msg_fact::deserialize_stream(in_stream);
-                    if (msg->get_msg_id() == CTRL_MSG_ACK) {
-                        cout << "New client was added to connections" << endl;
+                    switch (msg->get_msg_id()) {
+                        case CTRL_MSG_ACK:
+                            cout << "New client was added to connections" << endl;
+                            connections_ctrl::send_client_sock(curr->m_PrntSock,SockId,IpAddr.c_str());
+                            delete msg;
+                            return SUCCESS;
 
-                        //send socket_descriptor as well
-                        connections_ctrl::send_client_sock(curr->m_PrntSock,SockId,IpAddr.c_str());
-                        delete msg;
-                        return SUCCESS;
+                            break;
+                        case CTRL_MSG_NACK:
+                            if (m_Procs.size()<m_MaxProcs)
+                                return CREATE_CONN;
+                            return OUT_OF_CONN;
                     }
                     delete msg;
                 }

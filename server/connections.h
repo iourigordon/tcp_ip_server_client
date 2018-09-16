@@ -4,15 +4,17 @@
 class connections {
 
     public:
-        static connections* get_connection(int ChldSock);
+        static connections* get_connection(int ChldSock, int MaxConnections);
         static void delete_connection();
         int run();
 
     private:
-        connections(int ChldSock);
+        connections(int MaxConnections, int ChldSock);
         ~connections() {}
         connections(connections& Rhs);
         connections& operator=(connections& Rhs);
+
+        int process_ctrl_msg(char* Buff, int BuffLength);
 
         class client_info {
             friend class connections;
@@ -22,6 +24,7 @@ class connections {
 
         static connections* connections_pool;
 
+        int m_MaxConnections;
         int m_ChldSock;
         int m_MaxFd;
 

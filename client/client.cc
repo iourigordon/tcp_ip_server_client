@@ -16,6 +16,7 @@ using namespace std;
 int main(int argc, char* argv[])
 {
     int server_sock;
+    pid_t client_pid;
     fd_set server_fd;
     char buff[BUFF_LENGTH];
     struct sockaddr_in server_addr;
@@ -43,12 +44,15 @@ int main(int argc, char* argv[])
        return 0;
     }
 
+    client_pid = getpid();
+        
     for (int i=0; i<MAX_MESSAGES; i++) {
         memset(buff,0,BUFF_LENGTH);
-        sprintf(buff,"Hello");
+        sprintf(buff,"Client: %ld",client_pid);
         sleep(1);
         if (write(server_sock,buff,strlen(buff)+1) != -1) {
             cout << "Message Sent" << endl;
+            memset(buff,0,BUFF_LENGTH);
             FD_ZERO(&server_fd);
             FD_SET(server_sock,&server_fd);
             if (select(server_sock+1,&server_fd,NULL,NULL,NULL) != -1) {

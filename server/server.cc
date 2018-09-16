@@ -23,6 +23,7 @@ using namespace std;
 
 #define MAX_PEND_CONNS 10
 #define MAX_PROCS 2
+#define MAX_CONN_PER_PROC 2
 #define PRNT_COMM_SOCK 0
 #define CHLD_COMM_SOCK 1
 
@@ -59,8 +60,8 @@ int main(int argc, char* argv[])
     int server_sock, client_sock;
 
     int child_pid;
-    int to_chld_pipe[2];
-    int to_prnt_pipe[2];
+    //int to_chld_pipe[2];
+    //int to_prnt_pipe[2];
     int comm_socket[2];
 
     fd_set server_fds;
@@ -141,7 +142,7 @@ int main(int argc, char* argv[])
                             //child process
                             close(comm_socket[PRNT_COMM_SOCK]);
 
-                            connections *client_connections = connections::get_connection(comm_socket[CHLD_COMM_SOCK]);
+                            connections *client_connections = connections::get_connection(comm_socket[CHLD_COMM_SOCK],MAX_CONN_PER_PROC);
                             client_connections->run();
                             connections::delete_connection();
 
