@@ -27,9 +27,6 @@ connections::connections(int ChldSock): m_ChldSock(ChldSock)
     m_FdDescMap[m_ChldSock].desc = "Control";
 }
 
-connections::~connections()
-{
-}
 
 connections*
 connections::get_connection(int ChldSock)
@@ -40,10 +37,11 @@ connections::get_connection(int ChldSock)
     return connections_pool;
 }
 
-int
-connections::add_connection(int client_socket)
+void
+connections::delete_connection()
 {
-    return 0;
+    if (connections_pool)
+        delete connections_pool;
 }
 
 int
@@ -94,8 +92,11 @@ connections::run()
                                         }
                                     }
                                     cout << "Connections Proc is Over" << endl;
-                                    exit(SUCCESS);
+                                    m_FdDescMap.clear();
+                                    delete msg;
+                                    return 0;
                             }
+                            delete msg;
                         }
                     } else {
                         ret = ::read(fd->first,buff,BUF_LENGTH);
@@ -104,7 +105,7 @@ connections::run()
                             if (close(fd->first)) {
                                 cout << "ERROR: closing socket " << strerror(errno) << endl;
                             }
-                            m_FdDescMap.erase(m_FdDescMap.find(fd->first)); 
+                            fd = m_FdDescMap.erase(m_FdDescMap.find(fd->first)); 
                         } else if (ret == -1) {
                             cout << "ERROR: reading from socket " << strerror(errno) << endl;
                         } else {

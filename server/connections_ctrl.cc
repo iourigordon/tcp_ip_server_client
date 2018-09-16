@@ -31,6 +31,13 @@ get_conn_ctrl(int MaxProcs)
     return m_Instance;
 }
 
+void
+connections_ctrl::
+delete_conn_ctrl()
+{
+    if (m_Instance)
+        delete m_Instance;
+}
 ADD_CONN_ACTION
 connections_ctrl::
 add_client(int SockId, string IpAddr)
@@ -96,6 +103,9 @@ shut_down_procs()
             cout << "shut down message sent to " << curr->m_ProcId << endl;
         }
     }
+
+    delete msg;
+
     for(vector<proc_io>::iterator curr = m_Procs.begin();curr<m_Procs.end();curr++) {
         cout << "Waiting for " << curr->m_ProcId << " to shut down" << endl;
         if (waitpid(curr->m_ProcId,&status,0) == -1) {
@@ -130,6 +140,10 @@ send_client_sock(int CommSock, int FD, const char* IpAddr)
       char              control[CMSG_SPACE(sizeof(int))];
     } control_un;
     struct cmsghdr  *cmptr;
+
+    memset(&msg,0,sizeof(struct msghdr));
+    memset(iov,0,sizeof(struct iovec));
+    memset(&control_un,0,sizeof(control_un));
 
     msg.msg_control = control_un.control;
     msg.msg_controllen = sizeof(control_un.control);

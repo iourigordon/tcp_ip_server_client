@@ -143,6 +143,10 @@ int main(int argc, char* argv[])
 
                             connections *client_connections = connections::get_connection(comm_socket[CHLD_COMM_SOCK]);
                             client_connections->run();
+                            connections::delete_connection();
+
+                            connections_ctrl::delete_conn_ctrl();
+                            exit(SUCCESS);
                         }
                         break;
                     case OUT_OF_CONN:
@@ -160,6 +164,7 @@ int main(int argc, char* argv[])
             if ((errno = EINTR) && exit_mainloop) {
                 connections_ctrl* ctrl = connections_ctrl::get_conn_ctrl();
                 ctrl->shut_down_procs();
+                connections_ctrl::delete_conn_ctrl();
                 cout << "Server is shutting down" << endl;
                 break;
             }

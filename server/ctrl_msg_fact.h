@@ -23,6 +23,12 @@ class ctrl_msg_fact
 
 
     private:
+        ctrl_msg_fact();
+        ~ctrl_msg_fact();
+        
+        ctrl_msg_fact(ctrl_msg_fact& Rhs);
+        ctrl_msg_fact& operator=(ctrl_msg_fact& Rhs);
+
         friend class ctrl_msg;
         friend class ctrl_msg_add_client;
         friend class ctrl_msg_ack;

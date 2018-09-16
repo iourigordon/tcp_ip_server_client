@@ -2,28 +2,30 @@
 #define __CONNECTIONS_H__
 
 class connections {
-    connections(int ChldSock);
-    ~connections();
 
-public:
-    static connections* get_connection(int ChldSock);
-    int run();
-    int add_connection(int client_socket);
+    public:
+        static connections* get_connection(int ChldSock);
+        static void delete_connection();
+        int run();
 
-private:
+    private:
+        connections(int ChldSock);
+        ~connections() {}
+        connections(connections& Rhs);
+        connections& operator=(connections& Rhs);
 
-    class client_info {
-        friend class connections;
-        int    num_msgs;
-        string desc;
-    };
+        class client_info {
+            friend class connections;
+            int    num_msgs;
+            string desc;
+        };
 
-    static connections* connections_pool;
+        static connections* connections_pool;
 
-    int m_ChldSock;
-    int m_MaxFd;
+        int m_ChldSock;
+        int m_MaxFd;
 
-    map<int,client_info> m_FdDescMap;
+        map<int,client_info> m_FdDescMap;
 };
 
 #endif

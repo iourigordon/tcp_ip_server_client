@@ -11,6 +11,7 @@ class connections_ctrl
 {
     public:
         static connections_ctrl* get_conn_ctrl(int MaxProcs = 0); 
+        static void delete_conn_ctrl();
         static int create_connection(int fds[2]);
         static int send_client_sock(int CommSock, int FD, const char* IpAddr);
         static int receive_client_sock(int CommSock);
@@ -21,6 +22,10 @@ class connections_ctrl
 
     private:
         connections_ctrl(int MaxProcs):m_MaxProcs(MaxProcs) {}
+        ~connections_ctrl() {}
+        connections_ctrl(connections_ctrl& Rhs);
+        connections_ctrl& operator=(connections_ctrl& Rhs);
+
         class proc_io {
             friend class connections_ctrl;
 
