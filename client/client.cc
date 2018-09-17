@@ -10,7 +10,7 @@
 
 using namespace std;
 
-#define MAX_MESSAGES 10
+#define MAX_MESSAGES 30
 #define BUFF_LENGTH 1024
 
 int main(int argc, char* argv[])
