@@ -49,10 +49,12 @@ add_client(int SockId, string IpAddr)
     if (m_Procs.empty())
         return CREATE_CONN;
 
-    ctrl_msg_add_client* msg = dynamic_cast<ctrl_msg_add_client*>(ctrl_msg_fact::create_msg(CTRL_MSG_ADD_CLIENT));
-    msg->set_client_ip_addr(IpAddr);
-    ostringstream& msg_stream = ctrl_msg_fact::serialize_message(msg);
     for(vector<proc_io>::iterator curr = m_Procs.begin();curr<m_Procs.end();curr++) {
+        ctrl_msg_add_client* msg = dynamic_cast<ctrl_msg_add_client*>(ctrl_msg_fact::create_msg(CTRL_MSG_ADD_CLIENT));
+        msg->set_client_ip_addr(IpAddr);
+        ostringstream& msg_stream = ctrl_msg_fact::serialize_message(msg);
+
+        cout << "Attempting to add new client to " << curr->m_ProcId << endl;
         if (write(curr->m_PrntSock,msg_stream.str().c_str(),msg_stream.str().size()) != -1) {
             delete msg;
             FD_ZERO(&conn_set);
@@ -70,9 +72,11 @@ add_client(int SockId, string IpAddr)
 
                             break;
                         case CTRL_MSG_NACK:
-                            if (m_Procs.size()<m_MaxProcs)
-                                return CREATE_CONN;
-                            return OUT_OF_CONN;
+                            if ((curr+1) == m_Procs.end()) {
+                                delete msg;
+                                return (m_Procs.size()<m_MaxProcs)?CREATE_CONN:OUT_OF_CONN;
+                            }
+                            break;
                     }
                     delete msg;
                 }

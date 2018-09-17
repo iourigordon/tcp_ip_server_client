@@ -14,7 +14,8 @@ class connections {
         connections(connections& Rhs);
         connections& operator=(connections& Rhs);
 
-        int process_ctrl_msg(char* Buff, int BuffLength);
+        int  process_ctrl_msg(char* Buff, int BuffLength);
+        void print_debug(const char* DebugString);
 
         class client_info {
             friend class connections;

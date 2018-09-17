@@ -51,7 +51,7 @@ connections::run()
     fd_set working_set;
     char buff[BUF_LENGTH];
 
-    cout << "Connections Proc is running" << endl;
+    print_debug("Connections Proc is running");
 
     for(;;) {
         FD_ZERO(&working_set);
@@ -70,22 +70,25 @@ connections::run()
                                 return 0;
                         }
                     } else {
+                        ostringstream dbg_strm;
                         ret = ::read(fd->first,buff,BUF_LENGTH);
                         if (ret == 0) {
-                            cout << "Client " << fd->second.desc << " socket closed" << endl;
+                            dbg_strm << "Client " << fd->second.desc << " socket closed";
+                            print_debug(dbg_strm.str().c_str());
                             if (close(fd->first)) {
                                 cout << "ERROR: closing socket " << strerror(errno) << endl;
                             }
                             fd = m_FdDescMap.erase(m_FdDescMap.find(fd->first)); 
                         } else if (ret == -1) {
-                            cout << "ERROR: reading from socket " << strerror(errno) << endl;
+                            cerr << "ERROR: reading from socket " << strerror(errno) << endl;
                         } else {
-                            cout << "Received \"" << buff << "\" from " << fd->second.desc << endl;
+                            dbg_strm  << "Received \"" << buff << "\" from " << fd->second.desc;
+                            print_debug(dbg_strm.str().c_str());
                             fd->second.num_msgs++;
                             ostringstream reply;
                             reply << "Received " << fd->second.num_msgs;
                             if ((ret = write(fd->first,reply.str().c_str(),reply.str().size())) == -1) {
-                                cout << "ERROR: error replying " << strerror(errno) << endl;
+                                cerr << "ERROR: error replying " << strerror(errno) << endl;
                             }
                         }
                     }
@@ -107,7 +110,9 @@ process_ctrl_msg(char* Buff,  int BuffLength)
         case CTRL_MSG_ADD_CLIENT: {
             if ((m_MaxConnections+1)>m_FdDescMap.size()) { 
                 ctrl_msg_add_client* client_msg = dynamic_cast<ctrl_msg_add_client*>(msg);
-                cout << "Request for IP addr = " << client_msg->get_client_ip_addr() << endl;
+                ostringstream dbg_strm;
+                dbg_strm << "Request for IP addr = " << client_msg->get_client_ip_addr();
+                print_debug(dbg_strm.str().c_str());
                 string client_ip = client_msg->get_client_ip_addr();
                 delete client_msg;
                 msg = ctrl_msg_fact::create_msg(CTRL_MSG_ACK);
@@ -115,29 +120,37 @@ process_ctrl_msg(char* Buff,  int BuffLength)
                 if (write(m_ChldSock,msg_stream.str().c_str(),msg_stream.str().size()) != -1) {
                     int sock_id = connections_ctrl::receive_client_sock(m_ChldSock);
                     m_FdDescMap[sock_id].desc = client_ip;
-                    cout << "Socket fd is received, stream added" << endl;
+                    print_debug("Socket fd is received, stream added");
                 }
             } else {
+                delete msg;
                 msg = ctrl_msg_fact::create_msg(CTRL_MSG_NACK);
                 ostringstream& msg_stream = ctrl_msg_fact::serialize_message(msg);
                 if (write(m_ChldSock,msg_stream.str().c_str(),msg_stream.str().size()) != -1) {
-                    cout << "ERROR: Failed to send NACK" << endl;
+                    print_debug("cannot add more clients, sending NACK");
                 }              
             }
             break;
         }
         case CTRL_MSG_SHUT_DOWN:
-            cout << "Got Shut Down Message, closing fds" << endl;
+            print_debug("Got Shut Down Message, closing fds");
             for (map<int,client_info>::iterator fd = m_FdDescMap.begin(); fd != m_FdDescMap.end(); fd++) {
                 if (close(fd->first) != 0) {
-                    cout << "ERROR closing " << fd->first << endl;
+                    cerr << "ERROR closing " << fd->first << endl;
                 }
             }
-            cout << "Connections Proc is Over" << endl;
+            print_debug("Connections Proc is Over");
             m_FdDescMap.clear();
             delete msg;
             return 0;
         }
     delete msg;
     return 1;
+}
+
+void
+connections::
+print_debug(const char* DebugString)
+{
+    cout << "Proc " << getpid() << ": " << DebugString << endl;
 }
